@@ -1,4 +1,4 @@
-name: windows-build
+name: Create Release
 on:
   push:
     branches:
@@ -13,11 +13,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows-build:
+  build:
     uses: ./.github/workflows/reusable-build.yml
     with:
-      upload-artifacts: false
+      upload-artifacts: true
     if: |
       github.repository == 'wolono/azerothcore'
       && !github.event.pull_request.draft
       && (github.ref == 'refs/heads/canary' || contains(github.event.pull_request.labels.*.name, 'run-build') || github.event.label.name == 'run-build')
+
+  release:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: bin/
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bin/**/*
+          name: Automated Release ${{ github.sha }}
+          tag_name: ${{ github.sha }}

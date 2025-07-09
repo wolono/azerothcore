@@ -1,0 +1,34 @@
+name: Reusable Build
+on:
+  workflow_call:
+    inputs:
+      upload-artifacts:
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      BOOST_ROOT: C:\local\boost_1_82_0
+    steps:
+      - uses: actions/checkout@v4
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.13
+      - name: Configure OS
+        shell: bash
+        env:
+          CONTINUOUS_INTEGRATION: true
+        run: |
+          ./acore.sh install-deps
+      - name: Build
+        shell: bash
+        run: |
+          export CTOOLS_BUILD=all
+          ./acore.sh compiler build
+      - name: Upload Artifacts
+        if: ${{ inputs.upload-artifacts }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: bin/**/*
